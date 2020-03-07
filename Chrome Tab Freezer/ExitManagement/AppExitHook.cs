@@ -13,7 +13,7 @@ namespace Chrome_Tab_Freezer.ExitManagement
 		}
 
 		[DllImport ( "Kernel32" )]
-		private static extern bool SetConsoleCtrlHandler ( EventHandler handler, bool add );
+		private static extern bool SetConsoleCtrlHandler ( ExitEventHandler handler, bool add );
 
 		public static event Action<CtrlType> OnExit;
 
@@ -21,12 +21,9 @@ namespace Chrome_Tab_Freezer.ExitManagement
 		{
 			OnExit?.Invoke ( type );
 
-			//shutdown right away so there are no lingering threads
-			Environment.Exit ( -1 );
-
 			return true;
 		}
 
-		private delegate bool EventHandler ( CtrlType type );
+		private delegate bool ExitEventHandler ( CtrlType type );
 	}
 }
