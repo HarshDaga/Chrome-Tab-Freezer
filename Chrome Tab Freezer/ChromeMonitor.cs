@@ -144,17 +144,19 @@ namespace Chrome_Tab_Freezer
 						break;
 					SuspendTabs ( );
 					await Task
-						  .Delay ( Settings.SuspendDuration )
+						  .Delay ( Settings.SuspendDuration, _cts.Token )
 						  .ConfigureAwait ( false );
 					_cts.Token.ThrowIfCancellationRequested ( );
 					ResumeTabs ( );
 					await Task
-						  .Delay ( Settings.ResumeDuration )
+						  .Delay ( Settings.ResumeDuration, _cts.Token )
 						  .ConfigureAwait ( false );
 				}
 			}
 			catch ( TaskCanceledException ) { }
+			catch ( OperationCanceledException ) { }
 
+			ResumeTabs ( );
 			SetState ( ChromeMonitorState.Stopped );
 		}
 
