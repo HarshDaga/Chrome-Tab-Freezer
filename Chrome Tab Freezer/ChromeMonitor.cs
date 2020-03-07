@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
+using Chrome_Tab_Freezer.Chrome;
 using Chrome_Tab_Freezer.Extensions;
 using Chrome_Tab_Freezer.Types;
 using JetBrains.Annotations;
@@ -24,14 +26,17 @@ namespace Chrome_Tab_Freezer
 		public ChromeTabsState    TabsState { get; private set; }
 		public ChromeMonitorState State     { get; private set; }
 
-		private CancellationTokenSource _cts;
+		private readonly ChromeTabsPidExtractor  _extractor;
+		private          CancellationTokenSource _cts;
 
 		public ChromeMonitor ( FreezerSettings settings )
 		{
 			Settings  = settings;
 			Pids      = ImmutableList<int>.Empty;
-			TabsState = ChromeTabsState.Resumed;
+			TabsState = ChromeTabsState.Resumed ( Enumerable.Empty<int> ( ) );
 			State     = ChromeMonitorState.Stopped;
+
+			_extractor = new ChromeTabsPidExtractor ( );
 		}
 
 		public void UpdateSettings ( [NotNull] FreezerSettings settings )
@@ -67,29 +72,40 @@ namespace Chrome_Tab_Freezer
 			return true;
 		}
 
+		public bool UpdatePids ( )
+		{
+			if ( !Settings.UseLivePids )
+				return ReadPids ( );
+
+			_extractor.ClearBlackList ( Settings.OldPidClearDuration );
+			Pids = _extractor.GetPids ( ).ToImmutableList ( );
+			return true;
+		}
+
 		public void SuspendTabs ( bool freeze = true )
 		{
+			var affectedPids = new List<int> ( );
 			foreach ( var pid in Pids )
 				try
 				{
 					if ( !TryGetProcess ( pid, out var process ) )
 						continue;
 
+					affectedPids.Add ( pid );
 					if ( freeze )
-					{
 						process.Suspend ( );
-						SetTabsState ( ChromeTabsState.Suspended );
-					}
 					else
-					{
 						process.Resume ( );
-						SetTabsState ( ChromeTabsState.Resumed );
-					}
 				}
 				catch ( Exception e )
 				{
 					_errorSubject.OnNext ( new FreezeError ( pid, exception: e ) );
 				}
+
+
+			SetTabsState ( freeze
+							   ? ChromeTabsState.Suspended ( affectedPids )
+							   : ChromeTabsState.Resumed ( affectedPids ) );
 		}
 
 		public void ResumeTabs ( )
@@ -140,7 +156,7 @@ namespace Chrome_Tab_Freezer
 			{
 				while ( !_cts.IsCancellationRequested )
 				{
-					if ( !ReadPids ( ) )
+					if ( !UpdatePids ( ) )
 						break;
 					SuspendTabs ( );
 					await Task

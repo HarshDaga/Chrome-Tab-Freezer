@@ -10,7 +10,7 @@ namespace Chrome_Tab_Freezer.Types
 		public string    Reason    { get; internal set; }
 		public Exception Exception { get; internal set; }
 
-		public FreezeError ( int pid, string reason = "", Exception exception = null )
+		public FreezeError ( int pid, string reason = null, Exception exception = null )
 		{
 			Pid       = pid;
 			Reason    = reason;
@@ -29,7 +29,7 @@ namespace Chrome_Tab_Freezer.Types
 
 		public override string ToString ( )
 		{
-			return $"{Pid}: {Reason}";
+			return $"{Pid}: {Reason ?? Exception?.Message}";
 		}
 	}
 }

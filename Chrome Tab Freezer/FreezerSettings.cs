@@ -12,9 +12,11 @@ namespace Chrome_Tab_Freezer
 	{
 		public static readonly string FileName = "settings.json";
 
-		public string   PidFilePath     { get; set; } = "pids.txt";
-		public TimeSpan SuspendDuration { get; set; } = TimeSpan.FromSeconds ( 60 );
-		public TimeSpan ResumeDuration  { get; set; } = TimeSpan.FromSeconds ( 2 );
+		public bool     UseLivePids         { get; set; } = true;
+		public string   PidFilePath         { get; set; } = "pids.txt";
+		public TimeSpan OldPidClearDuration { get; set; } = TimeSpan.FromMinutes ( 10 );
+		public TimeSpan SuspendDuration     { get; set; } = TimeSpan.FromSeconds ( 60 );
+		public TimeSpan ResumeDuration      { get; set; } = TimeSpan.FromSeconds ( 2 );
 
 		[JsonConverter ( typeof ( StringEnumConverter ) )]
 		public Keys HotKey { get; set; } = Keys.Delete;
